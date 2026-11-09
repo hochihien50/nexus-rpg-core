@@ -1,4 +1,3 @@
-
 import os
 import discord
 from discord.ext import commands
@@ -12,7 +11,6 @@ if not TOKEN:
     raise RuntimeError("DISCORD_TOKEN is missing!")
 
 intents = discord.Intents.default()
-
 intents.members = True
 intents.message_content = True
 
@@ -30,8 +28,10 @@ class NexusBot(commands.Bot):
         await self.load_extension("commands.kingdom")
         print("Loaded: kingdom")
 
-        await self.tree.sync()
+        await self.load_extension("commands.kingdom_management")
+        print("Loaded: kingdom management")
 
+        await self.tree.sync()
         print("Slash commands synced.")
 
 
