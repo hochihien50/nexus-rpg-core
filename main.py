@@ -1,38 +1,78 @@
+
 import os
+import asyncio
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
 load_dotenv()
 
+import database
+
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 if not TOKEN:
     raise RuntimeError("DISCORD_TOKEN is missing!")
 
+
 intents = discord.Intents.default()
-intents.members = True
-intents.message_content = True
 
 
 class NexusBot(commands.Bot):
     async def setup_hook(self):
-        print("Loading extensions...")
+        print("=" * 45)
+        print("NEXUS RPG - INITIALIZING")
+        print("=" * 45)
 
-        await self.load_extension("commands.economy")
-        print("Loaded: economy")
+        # Initialize database
+        print("[DATABASE] Initializing...")
+        await asyncio.to_thread(database.init_db)
+        print("[DATABASE] Ready")
 
-        await self.load_extension("commands.moderation")
-        print("Loaded: moderation")
+        # Load extensions
+        extensions = [
+            # Core systems
+            "commands.economy",
+            "commands.moderation",
 
-        await self.load_extension("commands.kingdom")
-        print("Loaded: kingdom")
+            # Kingdom systems
+            "commands.kingdom",
+            "commands.kingdom_management",
+            "commands.kingdom_achievements",
+            "commands.kingdom_seasons",
+            "commands.kingdom_leaderboard",
 
-        await self.load_extension("commands.kingdom_management")
-        print("Loaded: kingdom management")
+            # RPG systems
+            "commands.gacha",
+            "commands.inventory",
+            "commands.weapons",
+        ]
 
-        await self.tree.sync()
-        print("Slash commands synced.")
+        for extension in extensions:
+            try:
+                await self.load_extension(extension)
+                print(f"[LOADED] {extension}", flush=True)
+
+            except Exception as error:
+                print(
+                    f"[FAILED] {extension}: {repr(error)}",
+                    flush=True
+                )
+                raise
+
+        # Sync slash commands
+        print("[DISCORD] Syncing slash commands...")
+
+        synced = await self.tree.sync()
+
+        print(
+            f"[DISCORD] Synced {len(synced)} slash commands",
+            flush=True
+        )
+
+        print("=" * 45)
+        print("NEXUS RPG INITIALIZATION COMPLETE")
+        print("=" * 45)
 
 
 bot = NexusBot(
@@ -43,22 +83,22 @@ bot = NexusBot(
 
 @bot.event
 async def on_ready():
-    print("-" * 40)
+    print("-" * 45)
     print(f"Logged in as: {bot.user}")
     print(f"Bot ID: {bot.user.id}")
     print(f"Guilds: {len(bot.guilds)}")
     print("NEXUS RPG is online!")
-    print("-" * 40)
+    print("-" * 45)
 
 
 @bot.event
 async def on_disconnect():
-    print("Bot disconnected from Discord Gateway.")
+    print("Bot disconnected from Discord Gateway.", flush=True)
 
 
 @bot.event
 async def on_resumed():
-    print("Discord Gateway connection resumed.")
+    print("Discord Gateway connection resumed.", flush=True)
 
 
 bot.run(TOKEN)
